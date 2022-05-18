@@ -1,0 +1,25 @@
+{
+  "name": "sockrates",
+  "version": "0.0.1",
+  "description": "A small client side websocket library for browsers.",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/donatelloraphael/sockrates.git"
+  },
+  "keywords": [
+    "websocket",
+    "reconnect",
+    "socket",
+    "heartbeat"
+  ],
+  "author": "Akbar E K",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/donatelloraphael/sockrates/issues"
+  },
+  "homepage": "https://github.com/donatelloraphael/sockrates#readme"
+}
