@@ -2,7 +2,7 @@
   "name": "sockrates",
   "version": "0.0.1",
   "description": "A small client side websocket library for browsers.",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "test"
   },
