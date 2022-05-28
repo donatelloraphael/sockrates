@@ -13,7 +13,7 @@
 </body>
 
 <script>
-  const webSocket = new Socket("ws://127.0.0.1:8080/", { heartBeat: 5000, reconnect: 10000 });
+  const webSocket = new Socket("ws://127.0.0.1:8080/", { heartBeat: 5 * 60 * 1000, reconnect: 3600 * 1000 });
   webSocket.open()
   const input = document.querySelector("#input-field")
   const btn = document.querySelector("#submit-btn");

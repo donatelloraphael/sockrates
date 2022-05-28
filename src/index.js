@@ -1,32 +1,30 @@
 function noop() {}
+const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 
-function Socket(url, opts) {
-  opts = opts || {};
+function Socket(url, opts = {}) {
 
-  var ws,
+  let ws,
     $ = {},
-    timer,
     attempts = 0,
     maxAttemps = opts.maxAttempts || Infinity,
-    timeout = opts.timeout || 5e3,
     isConnected = false,
-    isConnecting = false,
     heartBeatTime = opts.heartBeat,
     heartBeatInterval,
     reconnectTime = opts.reconnect,
     reconnectInterval,
-    isReconnect = false;
+    isReconnect = false,
+    isRetrying = false;
 
   $.open = function () {
-    if (isConnected || isConnecting) return;
+    if (isConnected) return;
 
     ws = new WebSocket(url, opts.protocols || []);
 
     ws.onopen = function (e) {
-      (opts.onopen || noop)(e);
+      ($.onopen || opts.onopen || noop)(e);
       attempts = 0;
-      isConnecting = false;
       isConnected = true;
+      isRetrying = false;
 
       clearInterval(reconnectInterval);
       clearInterval(heartBeatInterval);
@@ -38,51 +36,65 @@ function Socket(url, opts) {
       }
     };
 
-    ws.onclose = function (e) {
-      (opts.onclose || noop)(e);
-
+    ws.onclose = async function (e) {
+      ($.onclose || opts.onclose || noop)(e);
       clearInterval(reconnectInterval);
       clearInterval(heartBeatInterval);
-      clearTimeout(timer);
 
-      attempts = 0;
-      maxAttemps = opts.maxAttemps || Infinity;
       isConnected = false;
-      isConnecting = false;
+
+      if (attempts < maxAttemps) {
+        isRetrying = true;
+      }
 
       if (isReconnect) {
+        attempts = 0;
         $.reconnect(e);
         isReconnect = false;
-      } else if (e.code === 1e3 || e.code === 1001 || e.code === 1005) {
+        // TODO: Remove 1006 code check
+      } else if (
+        e.code === 1e3 ||
+        e.code === 1001 ||
+        e.code === 1005 ||
+        e.code === 1006 ||
+        e.code === 1013
+      ) {
+        await wait(
+          2 ** attempts * Math.floor(Math.random() * (1000 - 100 + 1) + 100)
+        );
         $.reconnect(e);
+      } else {
+        attempts = 0;
       }
     };
 
     ws.onmessage = function (e) {
-      (opts.onmessage || noop)(e);
+      ($.onmessage || opts.onmessage || noop)(e);
       setSocketHeartBeat();
     };
 
     ws.onerror = function (e) {
+      isReconnect = false;
       isConnected = false;
-      isConnecting = false;
 
       clearInterval(reconnectInterval);
       clearInterval(heartBeatInterval);
-      clearTimeout(timer);
 
-      e && e.code === "ECONNREFUSED"
-        ? $.reconnect(e)
-        : (opts.onerror || noop)(e);
+      if (e && e.code === "ECONNREFUSED") {
+        if (isRetrying) return;
+        $.reconnect(e);
+      } else {
+        ($.onerror || opts.onerror || noop)(e);
+      }
     };
   };
 
   $.reconnect = function (e) {
     if (attempts++ < maxAttemps) {
-      (opts.onreconnect || noop)(e);
+      ($.onreconnect || opts.onreconnect || noop)(e);
       $.open();
     } else {
-      (opts.onmaximum || noop)(e);
+      ($.onmaximum || opts.onmaximum || noop)(e);
     }
   };
 
@@ -100,15 +112,14 @@ function Socket(url, opts) {
 
   function setSocketHeartBeat() {
     if (!heartBeatTime) return;
-    clearInterval(heartBeatInterval)
+    clearInterval(heartBeatInterval);
 
     let heartBeatStart = Date.now();
     heartBeatInterval = setInterval(() => {
-      console.log(isConnecting)
-      if (!isConnected || isConnecting) return;
+      if (!isConnected) return;
       if (heartBeatStart + heartBeatTime < Date.now()) {
-        ws.send("ping");
-       heartBeatStart = Date.now();
+        ws.send(opts.pingPayload || "ping");
+        heartBeatStart = Date.now();
       }
     }, 1e3);
   }
@@ -116,10 +127,10 @@ function Socket(url, opts) {
   function setSocketReconnect() {
     if (!reconnectTime) return;
     clearInterval(reconnectInterval);
-    
+
     const reconnectStart = Date.now();
     const reconnectEnd = reconnectStart + reconnectTime;
-    
+
     reconnectInterval = setInterval(() => {
       if (!isConnected) return;
       if (reconnectEnd < Date.now()) {
