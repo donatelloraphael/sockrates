@@ -1,57 +1,55 @@
-function noop() {}
-const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+class Sockrates {
+  constructor(url, opts = {}) {
+    this.ws = {};
+    this.opts = opts;
+    this.url = url;
+    this.attempts = 0;
+    this.maxAttemps = opts.maxAttempts || Infinity;
+    this.isConnected = false;
+    this.heartBeatTime = opts.heartBeat || null;
+    this.heartBeatInterval = null;
+    this.reconnectTime = opts.reconnect || null;
+    this.reconnectInterval = null;
+    this.isReconnect = false;
+    this.isRetrying = false;
+  }
 
-function Socket(url, opts = {}) {
+  async open() {
+    if (this.isConnected) return;
 
-  let ws,
-    $ = {},
-    attempts = 0,
-    maxAttemps = opts.maxAttempts || Infinity,
-    isConnected = false,
-    heartBeatTime = opts.heartBeat,
-    heartBeatInterval,
-    reconnectTime = opts.reconnect,
-    reconnectInterval,
-    isReconnect = false,
-    isRetrying = false;
+    this.ws = await new WebSocket(this.url, this.opts.protocols || []);
 
-  $.open = function () {
-    if (isConnected) return;
+    this.ws.onopen = (e) => {
+      (this.opts.onopen || this.noop)(e);
+      this.attempts = 0;
+      this.isConnected = true;
+      this.isRetrying = false;
 
-    ws = new WebSocket(url, opts.protocols || []);
-
-    ws.onopen = function (e) {
-      ($.onopen || opts.onopen || noop)(e);
-      attempts = 0;
-      isConnected = true;
-      isRetrying = false;
-
-      clearInterval(reconnectInterval);
-      clearInterval(heartBeatInterval);
-      if (reconnectTime) {
-        setSocketReconnect();
+      clearInterval(this.reconnectInterval);
+      clearInterval(this.heartBeatInterval);
+      if (this.reconnectTime) {
+        this.setSocketReconnect();
       }
-      if (heartBeatTime) {
-        setSocketHeartBeat();
+      if (this.heartBeatTime) {
+        this.setSocketHeartBeat();
       }
     };
 
-    ws.onclose = async function (e) {
-      ($.onclose || opts.onclose || noop)(e);
-      clearInterval(reconnectInterval);
-      clearInterval(heartBeatInterval);
+    this.ws.onclose = async (e) => {
+      (this.opts.onclose || this.noop)(e);
+      clearInterval(this.reconnectInterval);
+      clearInterval(this.heartBeatInterval);
 
-      isConnected = false;
+      this.isConnected = false;
 
-      if (attempts < maxAttemps) {
-        isRetrying = true;
+      if (this.attempts < this.maxAttemps) {
+        this.isRetrying = true;
       }
 
-      if (isReconnect) {
-        attempts = 0;
-        $.reconnect(e);
-        isReconnect = false;
-        // TODO: Remove 1006 code check
+      if (this.isReconnect) {
+        this.attempts = 0;
+        this.reconnect(e);
+        this.isReconnect = false;
       } else if (
         e.code === 1e3 ||
         e.code === 1001 ||
@@ -59,86 +57,90 @@ function Socket(url, opts = {}) {
         e.code === 1006 ||
         e.code === 1013
       ) {
-        await wait(
-          2 ** attempts * Math.floor(Math.random() * (1000 - 100 + 1) + 100)
+        await this.wait(
+          2 ** this.attempts * Math.floor(Math.random() * (1000 - 100 + 1) + 100)
         );
-        $.reconnect(e);
+        this.reconnect(e);
       } else {
-        attempts = 0;
+        this.attempts = 0;
       }
     };
 
-    ws.onmessage = function (e) {
-      ($.onmessage || opts.onmessage || noop)(e);
-      setSocketHeartBeat();
+    this.ws.onmessage = (e) => {
+      (this.opts.onmessage || this.noop)(e);
+      this.setSocketHeartBeat();
     };
 
-    ws.onerror = function (e) {
-      isReconnect = false;
-      isConnected = false;
+    this.ws.onerror = (e) => {
+      this.isReconnect = false;
+      this.isConnected = false;
 
-      clearInterval(reconnectInterval);
-      clearInterval(heartBeatInterval);
+      clearInterval(this.reconnectInterval);
+      clearInterval(this.heartBeatInterval);
 
       if (e && e.code === "ECONNREFUSED") {
-        if (isRetrying) return;
-        $.reconnect(e);
+        if (this.isRetrying) return;
+        this.reconnect(e);
       } else {
-        ($.onerror || opts.onerror || noop)(e);
+        (this.opts.onerror || this.noop)(e);
       }
     };
   };
 
-  $.reconnect = function (e) {
-    if (attempts++ < maxAttemps) {
-      ($.onreconnect || opts.onreconnect || noop)(e);
-      $.open();
+  reconnect(e) {
+    if (this.attempts++ < this.maxAttemps) {
+      (this.opts.onreconnect || this.noop)(e);
+      this.open();
     } else {
-      ($.onmaximum || opts.onmaximum || noop)(e);
+      (this.opts.onmaximum || this.noop)(e);
     }
   };
 
-  $.json = function (x) {
-    ws.send(JSON.stringify(x));
+  json(x) {
+    this.ws.send(JSON.stringify(x));
   };
 
-  $.send = function (x) {
-    ws.send(x);
+  send(x) {
+    this.ws.send(x);
   };
 
-  $.close = function (x, y) {
-    ws.close(x || 1e3, y);
+  close(x, y) {
+    this.ws.close(x || 1e3, y);
   };
 
-  function setSocketHeartBeat() {
-    if (!heartBeatTime) return;
-    clearInterval(heartBeatInterval);
+  setSocketHeartBeat() {
+    if (!this.heartBeatTime) return;
+    clearInterval(this.heartBeatInterval);
 
     let heartBeatStart = Date.now();
-    heartBeatInterval = setInterval(() => {
-      if (!isConnected) return;
-      if (heartBeatStart + heartBeatTime < Date.now()) {
-        ws.send(opts.pingPayload || "ping");
+    this.heartBeatInterval = setInterval(() => {
+      if (!this.isConnected) return;
+      if (heartBeatStart + this.heartBeatTime < Date.now()) {
+        this.ws.send(this.opts.pingPayload || "ping");
         heartBeatStart = Date.now();
       }
     }, 1e3);
   }
 
-  function setSocketReconnect() {
-    if (!reconnectTime) return;
-    clearInterval(reconnectInterval);
+  setSocketReconnect() {
+    if (!this.reconnectTime) return;
+    clearInterval(this.reconnectInterval);
 
     const reconnectStart = Date.now();
-    const reconnectEnd = reconnectStart + reconnectTime;
+    const reconnectEnd = reconnectStart + this.reconnectTime;
 
-    reconnectInterval = setInterval(() => {
-      if (!isConnected) return;
+    this.reconnectInterval = setInterval(() => {
+      if (!this.isConnected) return;
       if (reconnectEnd < Date.now()) {
-        isReconnect = true;
-        ws.close();
+        this.isReconnect = true;
+        this.ws.close();
       }
     }, 1e3);
   }
 
-  return $;
+  noop() {}
+
+  wait(ms) {
+    return new Promise((res) => setTimeout(res, ms));
+  }
 }
