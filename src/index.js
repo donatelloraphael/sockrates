@@ -12,6 +12,8 @@ class Sockrates {
     this.reconnectInterval = null;
     this.isReconnect = false;
     this.isRetrying = false;
+    this.jsonPayload = [];
+    this.sendPayload = [];
   }
 
   async open() {
@@ -33,6 +35,14 @@ class Sockrates {
       if (this.heartBeatTime) {
         this.setSocketHeartBeat();
       }
+      this.jsonPayload.forEach(payload => {
+        this.json(payload);
+      });
+      this.sendPayload.forEach((payload) => {
+        this.send(payload);
+      });
+      this.jsonPayload = [];
+      this.sendPayload = [];
     };
 
     this.ws.onclose = async (e) => {
@@ -96,12 +106,20 @@ class Sockrates {
     }
   };
 
-  json(x) {
-    this.ws.send(JSON.stringify(x));
+  async json(x) {
+    if (!this.isConnected) {
+      this.jsonPayload.push(x);
+      this.open();
+    }
+    await this.ws.send(JSON.stringify(x));
   };
 
-  send(x) {
-    this.ws.send(x);
+  async send(x) {
+    if (!this.isConnected) {
+      this.sendPayload.push(x);
+      this.open();
+    }
+    await this.ws.send(x);
   };
 
   close(x, y) {
