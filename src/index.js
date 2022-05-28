@@ -14,19 +14,34 @@ class Sockrates {
     this.isRetrying = false;
     this.jsonPayload = [];
     this.sendPayload = [];
+    this.openTimer = null;
+    this.firstLoad = true;
+  }
+  
+  open() {
+    clearTimeout(this.openTimer);
+    if (this.firstLoad) {
+      this.firstLoad = false;
+      this.connect();
+    } else if (this.isRetrying) {
+      this.connect();
+    } else {
+      this.openTimer = setTimeout(() => this.connect(), 1000);
+      this.attempts = 0;
+    }
   }
 
-  async open() {
+  async connect() {
     if (this.isConnected) return;
 
     this.ws = await new WebSocket(this.url, this.opts.protocols || []);
-
+  
     this.ws.onopen = (e) => {
       (this.opts.onopen || this.noop)(e);
       this.attempts = 0;
       this.isConnected = true;
       this.isRetrying = false;
-
+  
       clearInterval(this.reconnectInterval);
       clearInterval(this.heartBeatInterval);
       if (this.reconnectTime) {
@@ -35,7 +50,7 @@ class Sockrates {
       if (this.heartBeatTime) {
         this.setSocketHeartBeat();
       }
-      this.jsonPayload.forEach(payload => {
+      this.jsonPayload.forEach((payload) => {
         this.json(payload);
       });
       this.sendPayload.forEach((payload) => {
@@ -44,18 +59,18 @@ class Sockrates {
       this.jsonPayload = [];
       this.sendPayload = [];
     };
-
+  
     this.ws.onclose = async (e) => {
-      (this.opts.onclose || this.noop)(e);
       clearInterval(this.reconnectInterval);
       clearInterval(this.heartBeatInterval);
-
+      
       this.isConnected = false;
-
+      
       if (this.attempts < this.maxAttemps) {
         this.isRetrying = true;
       }
-
+      (this.opts.onclose || this.noop)(e);
+  
       if (this.isReconnect) {
         this.attempts = 0;
         this.reconnect(e);
@@ -68,26 +83,27 @@ class Sockrates {
         e.code === 1013
       ) {
         await this.wait(
-          2 ** this.attempts * Math.floor(Math.random() * (1000 - 100 + 1) + 100)
+          2 ** this.attempts *
+            Math.floor(Math.random() * (1000 - 100 + 1) + 100)
         );
         this.reconnect(e);
       } else {
         this.attempts = 0;
       }
     };
-
+  
     this.ws.onmessage = (e) => {
       (this.opts.onmessage || this.noop)(e);
       this.setSocketHeartBeat();
     };
-
+  
     this.ws.onerror = (e) => {
       this.isReconnect = false;
       this.isConnected = false;
-
+  
       clearInterval(this.reconnectInterval);
       clearInterval(this.heartBeatInterval);
-
+  
       if (e && e.code === "ECONNREFUSED") {
         if (this.isRetrying) return;
         this.reconnect(e);
@@ -95,7 +111,8 @@ class Sockrates {
         (this.opts.onerror || this.noop)(e);
       }
     };
-  };
+
+  }
 
   reconnect(e) {
     if (this.attempts++ < this.maxAttemps) {
@@ -104,27 +121,31 @@ class Sockrates {
     } else {
       (this.opts.onmaximum || this.noop)(e);
     }
-  };
+  }
 
   async json(x) {
+    this.attempts = 0;
     if (!this.isConnected) {
       this.jsonPayload.push(x);
       this.open();
+    } else {
+      await this.ws.send(JSON.stringify(x));
     }
-    await this.ws.send(JSON.stringify(x));
-  };
+  }
 
   async send(x) {
+    this.attempts = 0;
     if (!this.isConnected) {
       this.sendPayload.push(x);
       this.open();
+    } else {
+      await this.ws.send(x);
     }
-    await this.ws.send(x);
-  };
+  }
 
   close(x, y) {
     this.ws.close(x || 1e3, y);
-  };
+  }
 
   setSocketHeartBeat() {
     if (!this.heartBeatTime) return;
