@@ -50,7 +50,6 @@ class Sockrates {
         this.attempts = 0;
         this.reconnect(e);
         this.isReconnect = false;
-        // TODO: Remove 1006 code check
       } else if (
         e.code === 1e3 ||
         e.code === 1001 ||
