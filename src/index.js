@@ -13,23 +13,20 @@ function Socket(url, opts) {
     isConnecting = false,
     heartBeatTime = opts.heartBeat,
     heartBeatInterval,
-    heartBeatStart,
     reconnectTime = opts.reconnect,
     reconnectInterval,
-    reconnectStart,
     isReconnect = false;
 
   $.open = function () {
     if (isConnected || isConnecting) return;
-    isConnecting = true;
-    isConnected = true;
 
     ws = new WebSocket(url, opts.protocols || []);
 
     ws.onopen = function (e) {
-      console.log("ONOPEN");
       (opts.onopen || noop)(e);
       attempts = 0;
+      isConnecting = false;
+      isConnected = true;
 
       clearInterval(reconnectInterval);
       clearInterval(heartBeatInterval);
@@ -50,7 +47,6 @@ function Socket(url, opts) {
 
       attempts = 0;
       maxAttemps = opts.maxAttemps || Infinity;
-      heartBeatStart = null;
       isConnected = false;
       isConnecting = false;
 
@@ -70,10 +66,10 @@ function Socket(url, opts) {
     ws.onerror = function (e) {
       isConnected = false;
       isConnecting = false;
-      timer = null;
 
       clearInterval(reconnectInterval);
       clearInterval(heartBeatInterval);
+      clearTimeout(timer);
 
       e && e.code === "ECONNREFUSED"
         ? $.reconnect(e)
@@ -82,11 +78,9 @@ function Socket(url, opts) {
   };
 
   $.reconnect = function (e) {
-    if (!timer && attempts++ < maxAttemps) {
-      timer = setTimeout(function () {
-        (opts.onreconnect || noop)(e);
-        $.open();
-      }, timeout);
+    if (attempts++ < maxAttemps) {
+      (opts.onreconnect || noop)(e);
+      $.open();
     } else {
       (opts.onmaximum || noop)(e);
     }
@@ -105,24 +99,25 @@ function Socket(url, opts) {
   };
 
   function setSocketHeartBeat() {
-    if (!heartBeatInterval) return;
+    if (!heartBeatTime) return;
+    clearInterval(heartBeatInterval)
 
-    heartBeatStart = Date.now();
-    clearInterval(heartBeatInterval);
-
+    let heartBeatStart = Date.now();
     heartBeatInterval = setInterval(() => {
-      if (!isConnected) return;
+      console.log(isConnecting)
+      if (!isConnected || isConnecting) return;
       if (heartBeatStart + heartBeatTime < Date.now()) {
         ws.send("ping");
-        heartBeatStart = Date.now();
+       heartBeatStart = Date.now();
       }
     }, 1e3);
   }
 
   function setSocketReconnect() {
     if (!reconnectTime) return;
+    clearInterval(reconnectInterval);
     
-    reconnectStart = Date.now();
+    const reconnectStart = Date.now();
     const reconnectEnd = reconnectStart + reconnectTime;
     
     reconnectInterval = setInterval(() => {
