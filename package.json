@@ -4,7 +4,6 @@
   "description": "A small client side websocket library for browsers.",
   "main": "src/index.js",
   "scripts": {
-    "test": "test"
   },
   "repository": {
     "type": "git",
@@ -15,7 +14,7 @@
     "reconnect",
     "socket",
     "heartbeat",
-    "browser"
+    "websocket client"
   ],
   "author": "Akbar E K",
   "license": "ISC",
