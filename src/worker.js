@@ -6,9 +6,9 @@ class Socket {
     this.attempts = 0;
     this.maxAttemps = opts.maxAttempts || Infinity;
     this.isConnected = false;
-    this.heartBeatTime = opts.heartBeat || null;
+    this.heartBeatTime = opts.heartBeatInterval || null;
     this.heartBeatInterval = null;
-    this.reconnectTime = opts.reconnect || null;
+    this.reconnectTime = opts.reconnectInterval || null;
     this.reconnectInterval = null;
     this.isReconnect = false;
     this.isRetrying = false;
@@ -78,9 +78,7 @@ class Socket {
         this.isRetrying = true;
       }
       try {
-        if (!isRetrying) {
-          postMessage({ action: "ONCLOSE" });
-        }
+        postMessage({ action: "ONCLOSE" });
       } catch (e) {}
 
       if (this.isReconnect) {
