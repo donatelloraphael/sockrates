@@ -41,7 +41,7 @@ const socket = new Sockrates("ws://127.0.0.1:8080/", {
  socket.onopen = function() {
     console.log("ONOPEN")
   }
-  webSocsocketket.onclose = function() {
+  socket.onclose = function() {
     console.log("ONCLOSE")
   }
   socket.onerror = function() {
