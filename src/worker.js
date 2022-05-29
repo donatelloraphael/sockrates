@@ -80,7 +80,9 @@ class Socket {
         this.isRetrying = true;
       }
       try {
-        postMessage({ action: "ONCLOSE" });
+        if (!isRetrying) {
+          postMessage({ action: "ONCLOSE" });
+        }
       } catch (e) {}
 
       if (this.isReconnect) {

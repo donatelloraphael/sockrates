@@ -14,7 +14,7 @@
 
 <script type="module">
   import Sockrates from "/src/index.js"
-  const webSocket = new Sockrates("ws://127.0.0.1:8080/", { heartBeat: 100000, reconnect: 10000000 });
+  const webSocket = new Sockrates("ws://127.0.0.1:8080/", { heartBeat: 100000, reconnect: 10000000, maxAttempts: 4 });
   webSocket.open()
   const input = document.querySelector("#input-field")
   const btn = document.querySelector("#submit-btn");
