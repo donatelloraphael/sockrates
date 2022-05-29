@@ -3,7 +3,6 @@
   "version": "1.0.1",
   "description": "A small client side websocket library for browsers.",
   "main": "src/index.js",
-  "type": "module",
   "scripts": {
     "test": "test"
   },
