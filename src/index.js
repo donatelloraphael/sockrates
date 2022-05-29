@@ -37,7 +37,7 @@ class Sockrates {
     this.ws = await new WebSocket(this.url, this.opts.protocols || []);
   
     this.ws.onopen = (e) => {
-      (this.opts.onopen || this.noop)(e);
+      (this.onopen || this.opts.onopen || this.noop)(e);
       this.attempts = 0;
       this.isConnected = true;
       this.isRetrying = false;
@@ -69,7 +69,7 @@ class Sockrates {
       if (this.attempts < this.maxAttemps) {
         this.isRetrying = true;
       }
-      (this.opts.onclose || this.noop)(e);
+      (this.onclose || this.opts.onclose || this.noop)(e);
   
       if (this.isReconnect) {
         this.attempts = 0;
@@ -93,7 +93,7 @@ class Sockrates {
     };
   
     this.ws.onmessage = (e) => {
-      (this.opts.onmessage || this.noop)(e);
+      (this.onmessage || this.opts.onmessage || this.noop)(e);
       this.setSocketHeartBeat();
     };
   
@@ -108,7 +108,7 @@ class Sockrates {
         if (this.isRetrying) return;
         this.reconnect(e);
       } else {
-        (this.opts.onerror || this.noop)(e);
+        (this.onerror || this.opts.onerror || this.noop)(e);
       }
     };
 
@@ -116,10 +116,10 @@ class Sockrates {
 
   reconnect(e) {
     if (this.attempts++ < this.maxAttemps) {
-      (this.opts.onreconnect || this.noop)(e);
+      (this.onreconnect || this.opts.onreconnect || this.noop)(e);
       this.open();
     } else {
-      (this.opts.onmaximum || this.noop)(e);
+      (this.onmaximum || this.opts.onmaximum || this.noop)(e);
     }
   }
 
