@@ -1,6 +1,6 @@
 class Sockrates {
   constructor(url, opts = {}) {
-    this.ws = {};
+    this.ws = null;
     this.opts = opts;
     this.url = url;
     this.attempts = 0;
@@ -123,20 +123,24 @@ class Sockrates {
     }
   }
 
-  async json(x) {
+  async json(x, backlog) {
     this.attempts = 0;
     if (!this.isConnected) {
-      this.jsonPayload.push(x);
+      if (backlog) {
+        this.jsonPayload.push(x);
+      }
       this.open();
     } else {
       await this.ws.send(JSON.stringify(x));
     }
   }
 
-  async send(x) {
+  async send(x, backlog) {
     this.attempts = 0;
     if (!this.isConnected) {
-      this.sendPayload.push(x);
+      if (backlog) {
+        this.sendPayload.push(x);
+      }
       this.open();
     } else {
       await this.ws.send(x);
