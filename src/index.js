@@ -4,7 +4,7 @@ export default class Sockrates {
       this.ws = new Worker(new URL("worker.js", import.meta.url));
       this.ws.postMessage({ action: "CONFIGURE", data: { url, opts } });
 
-      this.ws.onmessage = this.messageHandler;
+      this.ws.onmessage = this.messageHandler.bind(this);
     }
   }
 
@@ -31,6 +31,25 @@ export default class Sockrates {
   noop() {}
 
   messageHandler(e) {
-    console.log(e)
+    switch (e.data.action) {
+      case "ONOPEN":
+        (this.onopen || this.noop)();
+        break;
+      case "ONCLOSE":
+        (this.onclose || this.noop)();
+        break;
+      case "ONERROR":
+        (this.onerror || this.noop)();
+        break;
+      case "ONRECONNECT":
+        (this.onreconnect || this.noop)();
+        break;
+      case "ONMAXIMUM":
+        (this.onmaximum || this.noop)();
+        break;
+      case "ONMESSAGE":
+        (this.onmessage || this.noop)(e.data.data);
+        break;
+    }
   }
 }

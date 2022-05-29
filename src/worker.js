@@ -1,5 +1,3 @@
-let $;
-
 class Socket {
   constructor(url, opts = {}) {
     this.ws = null;
@@ -204,6 +202,8 @@ class Socket {
     return new Promise((res) => setTimeout(res, ms));
   }
 }
+
+let $;
 
 self.onmessage = function (e) {
   switch (e.data.action) {
