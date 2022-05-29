@@ -1,6 +1,6 @@
 {
   "name": "sockrates",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "A small client side websocket library for browsers.",
   "main": "src/index.js",
   "type": "module",
@@ -15,7 +15,8 @@
     "websocket",
     "reconnect",
     "socket",
-    "heartbeat"
+    "heartbeat",
+    "browser"
   ],
   "author": "Akbar E K",
   "license": "ISC",
