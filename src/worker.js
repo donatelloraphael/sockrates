@@ -1,13 +1,14 @@
 class Socket {
   constructor(url, opts = {}) {
     this.ws = null;
-    this.opts = opts;
+    this.protocols = opts.protocols;
     this.url = url;
     this.attempts = 0;
     this.maxAttemps = opts.maxAttempts || Infinity;
     this.isConnected = false;
     this.heartBeatTime = opts.heartBeatInterval || null;
     this.heartBeatInterval = null;
+    this.pingPayload = opts.pingPayload || "ping"
     this.reconnectTime = opts.reconnectInterval || null;
     this.reconnectInterval = null;
     this.isReconnect = false;
@@ -34,7 +35,7 @@ class Socket {
   async connect() {
     if (this.isConnected) return;
 
-    this.ws = await new WebSocket(this.url, this.opts.protocols || []);
+    this.ws = await new WebSocket(this.url, this.protocols || []);
 
     this.ws.onopen = (e) => {
       if (this.isReconnect) {
@@ -174,7 +175,7 @@ class Socket {
     this.heartBeatInterval = setInterval(() => {
       if (!this.isConnected) return;
       if (heartBeatStart + this.heartBeatTime < Date.now()) {
-        this.ws.send(this.opts.pingPayload || "ping");
+        this.ws.send(this.pingPayload);
         heartBeatStart = Date.now();
       }
     }, 1e3);
