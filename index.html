@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="src/index.js"></script>
+  <!-- <script src="src/index.js" type="module"></script> -->
   <title>Document</title>
 </head>
 <body>
@@ -12,8 +12,9 @@
   <button id="submit-btn">Send</button>
 </body>
 
-<script>
-  const webSocket = new Sockrates("ws://127.0.0.1:8080/", { heartBeat: 1000, reconnect: 10000 });
+<script type="module">
+  import Sockrates from "/src/index.js"
+  const webSocket = new Sockrates("ws://127.0.0.1:8080/", { heartBeat: 100000, reconnect: 10000000 });
   webSocket.open()
   const input = document.querySelector("#input-field")
   const btn = document.querySelector("#submit-btn");
