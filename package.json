@@ -1,10 +1,10 @@
 {
   "name": "sockrates",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "A small client side websocket library for browsers.",
   "main": "src/index.js",
-  "scripts": {
-  },
+  "types": "sockrates.d.ts",
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/donatelloraphael/sockrates.git"
