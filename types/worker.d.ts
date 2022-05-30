@@ -1,0 +1,30 @@
+declare class Socket {
+    constructor(url: any, opts?: {});
+    ws: WebSocket;
+    protocols: string|string[];
+    url: string;
+    attempts: number;
+    maxAttemps: number;
+    isConnected: boolean;
+    heartBeatTime: number;
+    heartBeatInterval: number;
+    pingPayload: any;
+    reconnectTime: number;
+    reconnectInterval: number;
+    isReconnect: boolean;
+    isRetrying: boolean;
+    jsonPayload: any[];
+    sendPayload: string[];
+    openTimer: number;
+    firstLoad: boolean;
+    open(): void;
+    connect(): Promise<void>;
+    reconnect(): void;
+    json(x: any, backlog: boolean): Promise<void>;
+    send(x: any, backlog: boolean): Promise<void>;
+    close(x: any, y: any): void;
+    setSocketHeartBeat(): void;
+    setSocketReconnect(): void;
+    wait(ms: number): any;
+}
+declare let $: Socket;

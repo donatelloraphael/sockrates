@@ -228,12 +228,12 @@ self.onmessage = function (e) {
       }
     case "SEND":
       {
-        $.send(e.data.data);
+        $.send(e.data.data, e.data.backlog);
         break;
       }
     case "JSON":
       {
-        $.json(e.data.data);
+        $.json(e.data.data, e.data.backlog);
         break;
       }
   }
