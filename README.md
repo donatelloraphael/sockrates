@@ -140,13 +140,13 @@ Initializes and opens a Websocket connection.
 
 Gracefully shuts down the websocket connection.
 
-### send(data)
+### send(data, backlog)
 
-Sends the `data` to the server through Websocket.
+Sends the `data` to the server through Websocket. Set the `backlog` argument to `true` to enable backlog of messages when connection is lost that will be sent when it reconnects. Backlog default is `false`.
 
-### json(data)
+### json(data, backlog)
 
-Calls `JSON.stringify` on data before sending to the server.
+Calls `JSON.stringify` on data before sending to the server. Set the `backlog` argument to `true` to enable backlog of messages when connection is lost that will be sent when it reconnects. Backlog default is `false`.
 
 
 ## Licence
