@@ -1,10 +1,12 @@
 export default class Sockrates {
   constructor(url, opts = {}) {
     if (window.Worker) {
-      this.ws = new Worker(new URL("worker.js", import.meta.url));
+      this.ws = new Worker("sockrates.worker.js");
       this.ws.postMessage({ action: "CONFIGURE", data: { url, opts } });
 
       this.ws.onmessage = this.messageHandler.bind(this);
+    } else {
+      console.error("Web workers are not supported in your browser to provide WebSocket connection.");
     }
   }
 
