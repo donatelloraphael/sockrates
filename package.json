@@ -1,6 +1,6 @@
 {
   "name": "sockrates",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "A small client side websocket library for browsers.",
   "main": "src/index.js",
   "types": "sockrates.d.ts",
