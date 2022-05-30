@@ -20,12 +20,12 @@ export default class Sockrates {
     this.ws.postMessage({ action: "RECONNECT" });
   }
 
-  json(x) {
-    this.ws.postMessage({ action: "JSON", data: x });
+  json(x, backlog) {
+    this.ws.postMessage({ action: "JSON", data: x, backlog: backlog });
   }
 
-  send(x) {
-    this.ws.postMessage({ action: "SEND", data: x });
+  send(x, backlog) {
+    this.ws.postMessage({ action: "SEND", data: x, backlog: backlog });
   }
 
   noop() {}
