@@ -207,9 +207,6 @@ function socketWorker() {
         }
         json(x, backlog) {
             return __awaiter(this, void 0, void 0, function* () {
-                if (!this.ws) {
-                    this.initError();
-                }
                 this.attempts = 0;
                 if (!this.isConnected) {
                     if (backlog) {
@@ -224,9 +221,6 @@ function socketWorker() {
         }
         send(x, backlog) {
             return __awaiter(this, void 0, void 0, function* () {
-                if (!this.ws) {
-                    this.initError();
-                }
                 this.attempts = 0;
                 if (!this.isConnected) {
                     if (backlog) {
@@ -240,9 +234,6 @@ function socketWorker() {
             });
         }
         close(x, y) {
-            if (!this.ws) {
-                this.initError();
-            }
             this.ws.close(x || 1e3, y);
         }
         setSocketHeartBeat() {
@@ -251,9 +242,6 @@ function socketWorker() {
             clearInterval(this.heartBeatInterval);
             let heartBeatStart = Date.now();
             this.heartBeatInterval = setInterval(() => {
-                if (!this.ws) {
-                    this.initError();
-                }
                 if (!this.isConnected)
                     return;
                 if (heartBeatStart + this.heartBeatTime < Date.now()) {
@@ -271,9 +259,6 @@ function socketWorker() {
             this.reconnectInterval = setInterval(() => {
                 if (!this.isConnected)
                     return;
-                if (!this.ws) {
-                    this.initError();
-                }
                 if (reconnectEnd < Date.now()) {
                     this.isReconnect = true;
                     this.ws.close();
@@ -282,9 +267,6 @@ function socketWorker() {
         }
         wait(ms) {
             return new Promise((res) => setTimeout(res, ms));
-        }
-        initError() {
-            throw new Error("Websocket connection has not been initialized.");
         }
     }
     let $;

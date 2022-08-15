@@ -46,11 +46,11 @@ export default class Sockrates {
     this.worker.postMessage({ action: "RECONNECT" });
   }
 
-  json(x: any, backlog: any[]) {
+  json(x: any, backlog?: any[]) {
     this.worker.postMessage({ action: "JSON", data: x, backlog: backlog });
   }
 
-  send(x: string, backlog: string[]) {
+  send(x: string, backlog?: string[]) {
     this.worker.postMessage({ action: "SEND", data: x, backlog: backlog });
   }
 
@@ -81,7 +81,7 @@ export default class Sockrates {
 }
 
 function socketWorker() {
-  
+
   class Socket {
     private ws: WebSocket | null = null;
     private protocols: string[];
