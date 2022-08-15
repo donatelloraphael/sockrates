@@ -28,6 +28,7 @@ export default class Sockrates {
     });
 
     this.worker = new Worker(window.URL.createObjectURL(blob));
+
     this.worker.postMessage({ action: "CONFIGURE", data: { url, opts } });
 
     this.worker.onmessage = this.messageHandler.bind(this);
@@ -80,7 +81,7 @@ export default class Sockrates {
 }
 
 function socketWorker() {
-
+  
   class Socket {
     private ws: WebSocket | null = null;
     private protocols: string[];
@@ -241,9 +242,6 @@ function socketWorker() {
     }
 
     async json(x: any, backlog?: any[]) {
-      if (!this.ws) {
-        this.initError();
-      }
       this.attempts = 0;
       if (!this.isConnected) {
         if (backlog) {
@@ -251,14 +249,11 @@ function socketWorker() {
         }
         this.open();
       } else {
-        await this.ws.send(JSON.stringify(x));
+        await this.ws!.send(JSON.stringify(x));
       }
     }
 
     async send(x: string, backlog?: string[]) {
-      if (!this.ws) {
-        this.initError();
-      }
       this.attempts = 0;
       if (!this.isConnected) {
         if (backlog) {
@@ -266,15 +261,12 @@ function socketWorker() {
         }
         this.open();
       } else {
-        await this.ws.send(x);
+        await this.ws!.send(x);
       }
     }
 
     close(x?: number, y?: string) {
-      if (!this.ws) {
-        this.initError();
-      }
-      this.ws.close(x || 1e3, y);
+      this.ws!.close(x || 1e3, y);
     }
 
     private setSocketHeartBeat() {
@@ -283,12 +275,9 @@ function socketWorker() {
 
       let heartBeatStart = Date.now();
       this.heartBeatInterval = setInterval(() => {
-        if (!this.ws) {
-          this.initError();
-        }
         if (!this.isConnected) return;
         if (heartBeatStart + this.heartBeatTime < Date.now()) {
-          this.ws.send(this.pingPayload);
+          this.ws!.send(this.pingPayload);
           heartBeatStart = Date.now();
         }
       }, 1e3);
@@ -303,22 +292,15 @@ function socketWorker() {
 
       this.reconnectInterval = setInterval(() => {
         if (!this.isConnected) return;
-        if (!this.ws) {
-          this.initError();
-        }
         if (reconnectEnd < Date.now()) {
           this.isReconnect = true;
-          this.ws.close();
+          this.ws!.close();
         }
       }, 1e3);
     }
 
     private wait(ms: number): Promise<void> {
       return new Promise((res) => setTimeout(res, ms));
-    }
-
-    private initError(): never {
-      throw new Error("Websocket connection has not been initialized.");
     }
   }
 
