@@ -134,7 +134,7 @@ function socketWorker() {
       }
     }
 
-    async connect() {
+    connect() {
       if (this.isConnected) return;
 
       this.ws = new WebSocket(this.url, this.protocols || []);
@@ -171,7 +171,7 @@ function socketWorker() {
         this.sendPayload = [];
       };
 
-      this.ws.onclose = async (e) => {
+      this.ws.onclose = (e) => {
         clearInterval(this.reconnectInterval);
         clearInterval(this.heartBeatInterval);
 
@@ -195,11 +195,12 @@ function socketWorker() {
           e.code === 1006 ||
           e.code === 1013
         ) {
-          await this.wait(
+          this.wait(
             2 ** this.attempts *
               Math.floor(Math.random() * (1000 - 100 + 1) + 100)
-          );
-          this.reconnect();
+          ).then(() => {
+            return this.reconnect();
+          });
         } else {
           this.attempts = 0;
         }
@@ -241,7 +242,7 @@ function socketWorker() {
       }
     }
 
-    async json(x: any, backlog?: any[]) {
+    json(x: any, backlog?: any[]) {
       this.attempts = 0;
       if (!this.isConnected) {
         if (backlog) {
@@ -249,11 +250,11 @@ function socketWorker() {
         }
         this.open();
       } else {
-        await this.ws!.send(JSON.stringify(x));
+        this.ws!.send(JSON.stringify(x));
       }
     }
 
-    async send(x: string, backlog?: string[]) {
+    send(x: string, backlog?: string[]) {
       this.attempts = 0;
       if (!this.isConnected) {
         if (backlog) {
@@ -261,7 +262,7 @@ function socketWorker() {
         }
         this.open();
       } else {
-        await this.ws!.send(x);
+        this.ws!.send(x);
       }
     }
 
