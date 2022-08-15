@@ -16,7 +16,7 @@ export default class Sockrates {
   public onmaximum: Function = this.onopen;
   public onmessage: Function = this.onopen;
 
-  constructor(url: string, opts: Options = {}) {
+  constructor(url: string, opts: Partial<Options> = {}) {
     if (!window.Worker) {
       throw new Error(
         "Web workers are not supported in your browser to provide WebSocket connection."
@@ -101,7 +101,7 @@ function socketWorker() {
     private openTimer: ReturnType<typeof setTimeout> | null;
     private firstLoad: boolean;
 
-    constructor(url: string, opts: Options = {}) {
+    constructor(url: string, opts: Partial<Options> = {}) {
       this.protocols = opts.protocols || [];
       this.url = url;
       this.attempts = 0;

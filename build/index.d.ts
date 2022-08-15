@@ -13,12 +13,12 @@ export default class Sockrates {
     onreconnect: Function;
     onmaximum: Function;
     onmessage: Function;
-    constructor(url: string, opts?: Options);
+    constructor(url: string, opts?: Partial<Options>);
     open(): void;
     close(): void;
     reconnect(): void;
-    json(x: any, backlog: any[]): void;
-    send(x: string, backlog: string[]): void;
+    json(x: any, backlog?: any[]): void;
+    send(x: string, backlog?: string[]): void;
     private noop;
     private messageHandler;
 }
