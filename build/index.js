@@ -93,7 +93,7 @@ function socketWorker() {
                 this.attempts = 0;
             }
         }
-        async connect() {
+        connect() {
             if (this.isConnected)
                 return;
             this.ws = new WebSocket(this.url, this.protocols || []);
@@ -128,7 +128,7 @@ function socketWorker() {
                 this.jsonPayload = [];
                 this.sendPayload = [];
             };
-            this.ws.onclose = async (e) => {
+            this.ws.onclose = (e) => {
                 clearInterval(this.reconnectInterval);
                 clearInterval(this.heartBeatInterval);
                 this.isConnected = false;
@@ -149,9 +149,10 @@ function socketWorker() {
                     e.code === 1005 ||
                     e.code === 1006 ||
                     e.code === 1013) {
-                    await this.wait(2 ** this.attempts *
-                        Math.floor(Math.random() * (1000 - 100 + 1) + 100));
-                    this.reconnect();
+                    this.wait(Math.pow(2, this.attempts) *
+                        Math.floor(Math.random() * (1000 - 100 + 1) + 100)).then(() => {
+                        return this.reconnect();
+                    });
                 }
                 else {
                     this.attempts = 0;
@@ -194,7 +195,7 @@ function socketWorker() {
                 catch (e) { }
             }
         }
-        async json(x, backlog) {
+        json(x, backlog) {
             this.attempts = 0;
             if (!this.isConnected) {
                 if (backlog) {
@@ -203,10 +204,10 @@ function socketWorker() {
                 this.open();
             }
             else {
-                await this.ws.send(JSON.stringify(x));
+                this.ws.send(JSON.stringify(x));
             }
         }
-        async send(x, backlog) {
+        send(x, backlog) {
             this.attempts = 0;
             if (!this.isConnected) {
                 if (backlog) {
@@ -215,7 +216,7 @@ function socketWorker() {
                 this.open();
             }
             else {
-                await this.ws.send(x);
+                this.ws.send(x);
             }
         }
         close(x, y) {
