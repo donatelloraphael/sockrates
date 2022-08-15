@@ -4,6 +4,7 @@ node_modules
 uploads/
 # Ignore built files
 dist/**/*
+build/**/*
 
 # Ignore debug log
 debug.log
