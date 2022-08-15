@@ -11,32 +11,36 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 class Sockrates {
     constructor(url, opts = {}) {
-        if (window.Worker) {
-            const blob = new Blob(["(", socketWorker.toString(), ")()"], {
-                type: "text/javascript",
-            });
-            this.ws = new Worker(window.URL.createObjectURL(blob));
-            this.ws.postMessage({ action: "CONFIGURE", data: { url, opts } });
-            this.ws.onmessage = this.messageHandler.bind(this);
+        this.onopen = this.noop;
+        this.onclose = this.onopen;
+        this.onerror = this.onopen;
+        this.onreconnect = this.onopen;
+        this.onmaximum = this.onopen;
+        this.onmessage = this.onopen;
+        if (!window.Worker) {
+            throw new Error("Web workers are not supported in your browser to provide WebSocket connection.");
         }
-        else {
-            console.error("Web workers are not supported in your browser to provide WebSocket connection.");
-        }
+        const blob = new Blob(["(", socketWorker.toString(), ")()"], {
+            type: "text/javascript",
+        });
+        this.worker = new Worker(window.URL.createObjectURL(blob));
+        this.worker.postMessage({ action: "CONFIGURE", data: { url, opts } });
+        this.worker.onmessage = this.messageHandler.bind(this);
     }
     open() {
-        this.ws.postMessage({ action: "OPEN" });
+        this.worker.postMessage({ action: "OPEN" });
     }
     close() {
-        this.ws.postMessage({ action: "CLOSE" });
+        this.worker.postMessage({ action: "CLOSE" });
     }
     reconnect() {
-        this.ws.postMessage({ action: "RECONNECT" });
+        this.worker.postMessage({ action: "RECONNECT" });
     }
     json(x, backlog) {
-        this.ws.postMessage({ action: "JSON", data: x, backlog: backlog });
+        this.worker.postMessage({ action: "JSON", data: x, backlog: backlog });
     }
     send(x, backlog) {
-        this.ws.postMessage({ action: "SEND", data: x, backlog: backlog });
+        this.worker.postMessage({ action: "SEND", data: x, backlog: backlog });
     }
     noop() { }
     messageHandler(e) {
@@ -67,16 +71,16 @@ function socketWorker() {
     class Socket {
         constructor(url, opts = {}) {
             this.ws = null;
-            this.protocols = opts.protocols;
+            this.protocols = opts.protocols || [];
             this.url = url;
             this.attempts = 0;
-            this.maxAttemps = opts.maxAttempts || Infinity;
+            this.maxAttempts = opts.maxAttempts || Infinity;
             this.isConnected = false;
-            this.heartBeatTime = opts.heartBeatInterval || null;
-            this.heartBeatInterval = null;
+            this.heartBeatTime = opts.heartBeatInterval || 0;
+            this.heartBeatInterval = 0;
             this.pingPayload = opts.pingPayload || "ping";
-            this.reconnectTime = opts.reconnectInterval || null;
-            this.reconnectInterval = null;
+            this.reconnectTime = opts.reconnectInterval || 0;
+            this.reconnectInterval = 0;
             this.isReconnect = false;
             this.isRetrying = false;
             this.jsonPayload = [];
@@ -85,7 +89,7 @@ function socketWorker() {
             this.firstLoad = true;
         }
         open() {
-            clearTimeout(this.openTimer);
+            this.openTimer && clearTimeout(this.openTimer);
             if (this.firstLoad) {
                 this.firstLoad = false;
                 this.connect();
@@ -138,7 +142,7 @@ function socketWorker() {
                     clearInterval(this.reconnectInterval);
                     clearInterval(this.heartBeatInterval);
                     this.isConnected = false;
-                    if (this.attempts < this.maxAttemps) {
+                    if (this.attempts < this.maxAttempts) {
                         this.isRetrying = true;
                     }
                     try {
@@ -147,7 +151,7 @@ function socketWorker() {
                     catch (e) { }
                     if (this.isReconnect) {
                         this.attempts = 0;
-                        this.reconnect(e);
+                        this.reconnect();
                         this.isReconnect = false;
                     }
                     else if (e.code === 1e3 ||
@@ -157,7 +161,7 @@ function socketWorker() {
                         e.code === 1013) {
                         yield this.wait(Math.pow(2, this.attempts) *
                             Math.floor(Math.random() * (1000 - 100 + 1) + 100));
-                        this.reconnect(e);
+                        this.reconnect();
                     }
                     else {
                         this.attempts = 0;
@@ -178,7 +182,7 @@ function socketWorker() {
                     if (e && e.code === "ECONNREFUSED") {
                         if (this.isRetrying)
                             return;
-                        this.reconnect(e);
+                        this.reconnect();
                     }
                     else {
                         try {
@@ -191,7 +195,7 @@ function socketWorker() {
         }
         reconnect() {
             this.isReconnect = true;
-            if (this.attempts++ < this.maxAttemps) {
+            if (this.attempts++ < this.maxAttempts) {
                 this.open();
             }
             else {
@@ -203,6 +207,9 @@ function socketWorker() {
         }
         json(x, backlog) {
             return __awaiter(this, void 0, void 0, function* () {
+                if (!this.ws) {
+                    this.initError();
+                }
                 this.attempts = 0;
                 if (!this.isConnected) {
                     if (backlog) {
@@ -217,6 +224,9 @@ function socketWorker() {
         }
         send(x, backlog) {
             return __awaiter(this, void 0, void 0, function* () {
+                if (!this.ws) {
+                    this.initError();
+                }
                 this.attempts = 0;
                 if (!this.isConnected) {
                     if (backlog) {
@@ -230,6 +240,9 @@ function socketWorker() {
             });
         }
         close(x, y) {
+            if (!this.ws) {
+                this.initError();
+            }
             this.ws.close(x || 1e3, y);
         }
         setSocketHeartBeat() {
@@ -238,6 +251,9 @@ function socketWorker() {
             clearInterval(this.heartBeatInterval);
             let heartBeatStart = Date.now();
             this.heartBeatInterval = setInterval(() => {
+                if (!this.ws) {
+                    this.initError();
+                }
                 if (!this.isConnected)
                     return;
                 if (heartBeatStart + this.heartBeatTime < Date.now()) {
@@ -255,6 +271,9 @@ function socketWorker() {
             this.reconnectInterval = setInterval(() => {
                 if (!this.isConnected)
                     return;
+                if (!this.ws) {
+                    this.initError();
+                }
                 if (reconnectEnd < Date.now()) {
                     this.isReconnect = true;
                     this.ws.close();
@@ -263,6 +282,9 @@ function socketWorker() {
         }
         wait(ms) {
             return new Promise((res) => setTimeout(res, ms));
+        }
+        initError() {
+            throw new Error("Websocket connection has not been initialized.");
         }
     }
     let $;
