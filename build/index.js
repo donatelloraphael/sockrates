@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 class Sockrates {
     constructor(url, opts = {}) {
@@ -102,96 +93,94 @@ function socketWorker() {
                 this.attempts = 0;
             }
         }
-        connect() {
-            return __awaiter(this, void 0, void 0, function* () {
-                if (this.isConnected)
-                    return;
-                this.ws = yield new WebSocket(this.url, this.protocols || []);
-                this.ws.onopen = (e) => {
-                    if (this.isReconnect) {
-                        try {
-                            postMessage({ action: "ONRECONNECT" });
-                        }
-                        catch (e) { }
-                    }
+        async connect() {
+            if (this.isConnected)
+                return;
+            this.ws = new WebSocket(this.url, this.protocols || []);
+            this.ws.onopen = (e) => {
+                if (this.isReconnect) {
                     try {
-                        postMessage({ action: "ONOPEN" });
+                        postMessage({ action: "ONRECONNECT" });
                     }
                     catch (e) { }
-                    this.attempts = 0;
-                    this.isConnected = true;
-                    this.isRetrying = false;
-                    clearInterval(this.reconnectInterval);
-                    clearInterval(this.heartBeatInterval);
-                    if (this.reconnectTime) {
-                        this.setSocketReconnect();
-                    }
-                    if (this.heartBeatTime) {
-                        this.setSocketHeartBeat();
-                    }
-                    this.jsonPayload.forEach((payload) => {
-                        this.json(payload);
-                    });
-                    this.sendPayload.forEach((payload) => {
-                        this.send(payload);
-                    });
-                    this.jsonPayload = [];
-                    this.sendPayload = [];
-                };
-                this.ws.onclose = (e) => __awaiter(this, void 0, void 0, function* () {
-                    clearInterval(this.reconnectInterval);
-                    clearInterval(this.heartBeatInterval);
-                    this.isConnected = false;
-                    if (this.attempts < this.maxAttempts) {
-                        this.isRetrying = true;
-                    }
-                    try {
-                        postMessage({ action: "ONCLOSE" });
-                    }
-                    catch (e) { }
-                    if (this.isReconnect) {
-                        this.attempts = 0;
-                        this.reconnect();
-                        this.isReconnect = false;
-                    }
-                    else if (e.code === 1e3 ||
-                        e.code === 1001 ||
-                        e.code === 1005 ||
-                        e.code === 1006 ||
-                        e.code === 1013) {
-                        yield this.wait(Math.pow(2, this.attempts) *
-                            Math.floor(Math.random() * (1000 - 100 + 1) + 100));
-                        this.reconnect();
-                    }
-                    else {
-                        this.attempts = 0;
-                    }
-                });
-                this.ws.onmessage = (e) => {
-                    try {
-                        postMessage({ action: "ONMESSAGE", data: e.data });
-                    }
-                    catch (e) { }
+                }
+                try {
+                    postMessage({ action: "ONOPEN" });
+                }
+                catch (e) { }
+                this.attempts = 0;
+                this.isConnected = true;
+                this.isRetrying = false;
+                clearInterval(this.reconnectInterval);
+                clearInterval(this.heartBeatInterval);
+                if (this.reconnectTime) {
+                    this.setSocketReconnect();
+                }
+                if (this.heartBeatTime) {
                     this.setSocketHeartBeat();
-                };
-                this.ws.onerror = (e) => {
+                }
+                this.jsonPayload.forEach((payload) => {
+                    this.json(payload);
+                });
+                this.sendPayload.forEach((payload) => {
+                    this.send(payload);
+                });
+                this.jsonPayload = [];
+                this.sendPayload = [];
+            };
+            this.ws.onclose = async (e) => {
+                clearInterval(this.reconnectInterval);
+                clearInterval(this.heartBeatInterval);
+                this.isConnected = false;
+                if (this.attempts < this.maxAttempts) {
+                    this.isRetrying = true;
+                }
+                try {
+                    postMessage({ action: "ONCLOSE" });
+                }
+                catch (e) { }
+                if (this.isReconnect) {
+                    this.attempts = 0;
+                    this.reconnect();
                     this.isReconnect = false;
-                    this.isConnected = false;
-                    clearInterval(this.reconnectInterval);
-                    clearInterval(this.heartBeatInterval);
-                    if (e && e.code === "ECONNREFUSED") {
-                        if (this.isRetrying)
-                            return;
-                        this.reconnect();
+                }
+                else if (e.code === 1e3 ||
+                    e.code === 1001 ||
+                    e.code === 1005 ||
+                    e.code === 1006 ||
+                    e.code === 1013) {
+                    await this.wait(2 ** this.attempts *
+                        Math.floor(Math.random() * (1000 - 100 + 1) + 100));
+                    this.reconnect();
+                }
+                else {
+                    this.attempts = 0;
+                }
+            };
+            this.ws.onmessage = (e) => {
+                try {
+                    postMessage({ action: "ONMESSAGE", data: e.data });
+                }
+                catch (e) { }
+                this.setSocketHeartBeat();
+            };
+            this.ws.onerror = (e) => {
+                this.isReconnect = false;
+                this.isConnected = false;
+                clearInterval(this.reconnectInterval);
+                clearInterval(this.heartBeatInterval);
+                if (e && e.code === "ECONNREFUSED") {
+                    if (this.isRetrying)
+                        return;
+                    this.reconnect();
+                }
+                else {
+                    try {
+                        postMessage({ action: "ONERROR" });
                     }
-                    else {
-                        try {
-                            postMessage({ action: "ONERROR" });
-                        }
-                        catch (e) { }
-                    }
-                };
-            });
+                    catch (e) { }
+                }
+            };
         }
         reconnect() {
             this.isReconnect = true;
@@ -205,33 +194,29 @@ function socketWorker() {
                 catch (e) { }
             }
         }
-        json(x, backlog) {
-            return __awaiter(this, void 0, void 0, function* () {
-                this.attempts = 0;
-                if (!this.isConnected) {
-                    if (backlog) {
-                        this.jsonPayload.push(x);
-                    }
-                    this.open();
+        async json(x, backlog) {
+            this.attempts = 0;
+            if (!this.isConnected) {
+                if (backlog) {
+                    this.jsonPayload.push(x);
                 }
-                else {
-                    yield this.ws.send(JSON.stringify(x));
-                }
-            });
+                this.open();
+            }
+            else {
+                await this.ws.send(JSON.stringify(x));
+            }
         }
-        send(x, backlog) {
-            return __awaiter(this, void 0, void 0, function* () {
-                this.attempts = 0;
-                if (!this.isConnected) {
-                    if (backlog) {
-                        this.sendPayload.push(x);
-                    }
-                    this.open();
+        async send(x, backlog) {
+            this.attempts = 0;
+            if (!this.isConnected) {
+                if (backlog) {
+                    this.sendPayload.push(x);
                 }
-                else {
-                    yield this.ws.send(x);
-                }
-            });
+                this.open();
+            }
+            else {
+                await this.ws.send(x);
+            }
         }
         close(x, y) {
             this.ws.close(x || 1e3, y);

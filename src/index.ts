@@ -137,7 +137,7 @@ function socketWorker() {
     async connect() {
       if (this.isConnected) return;
 
-      this.ws = await new WebSocket(this.url, this.protocols || []);
+      this.ws = new WebSocket(this.url, this.protocols || []);
 
       this.ws.onopen = (e) => {
         if (this.isReconnect) {
